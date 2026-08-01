@@ -1,0 +1,54 @@
+:root {
+  --rosa-blush: #EFCFC8;
+  --rosa-nude: #E6C1B8;
+  --creme-off: #F8F3EE;
+  --madeira: #D5B08A;
+  --bege-areia: #E8D9C8;
+  --dourado: #B88A45;
+  --marrom-claro: #A67856;
+  --marrom-medio: #7D5B45;
+  --branco: #FFFFFF;
+
+  --fundo-principal: var(--creme-off);
+  --fundo-claro: var(--branco);
+  --texto-principal: var(--marrom-medio);
+  --texto-secundario: var(--marrom-claro);
+  --detalhe: var(--rosa-nude);
+  --metalico: var(--dourado);
+  --accent: var(--madeira);
+
+  --sans: 'Segoe UI', system-ui, Roboto, sans-serif;
+  --heading: 'Segoe UI', system-ui, Roboto, sans-serif;
+
+  font: 16px/1.5 var(--sans);
+  color: var(--texto-principal);
+  background: var(--fundo-principal);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3 {
+  font-family: var(--heading);
+  color: var(--texto-principal);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
