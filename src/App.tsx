@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
 import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy, where, onSnapshot } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import FloralDecor from './components/FloralDecor'
+import { scrapeProduct } from './scrapers'
+import { StoreNotSupportedError } from './scrapers/types'
 import './App.css'
 
 interface ProductData {
@@ -53,6 +55,11 @@ function App() {
 
   const [imageSource, setImageSource] = useState<'url' | 'upload'>('upload')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
+
+  const [scraping, setScraping] = useState(false)
+  const [scrapeError, setScrapeError] = useState('')
+  const scrapeTimer = useRef<number | null>(null)
+  const lastScrapedLink = useRef('')
 
   const [categoryName, setCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<CategoryData | null>(null)
@@ -107,6 +114,47 @@ function App() {
 
   const normalProducts = useMemo(() => products.filter((p) => p.role !== 'destaque'), [products])
   const featuredProducts = useMemo(() => products.filter((p) => p.role === 'destaque'), [products])
+
+  useEffect(() => {
+    if (productFormMode === 'none') return
+    const trimmed = link.trim()
+    if (!trimmed) return
+    if (lastScrapedLink.current === trimmed) return
+    if (scrapeTimer.current) {
+      window.clearTimeout(scrapeTimer.current)
+    }
+    scrapeTimer.current = window.setTimeout(async () => {
+      setScraping(true)
+      setScrapeError('')
+      try {
+        const product = await scrapeProduct(trimmed)
+        lastScrapedLink.current = trimmed
+        if (product.name) setName(product.name)
+        if (product.price) setPrice(product.price)
+        if (product.store) setStore(product.store)
+        if (product.image) setImage(product.image)
+        if (!product.name && !product.price && !product.image) {
+          setScrapeError('Ocorreu um erro durante a busca. Tente novamente.')
+        } else {
+          setScrapeError('')
+        }
+      } catch (err) {
+        if (err instanceof StoreNotSupportedError) {
+          setScrapeError('Loja não suportada.')
+        } else {
+          const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+          setScrapeError(msg === 'Loja não suportada.' ? 'Loja não suportada.' : 'Ocorreu um erro durante a busca. Tente novamente.')
+        }
+      } finally {
+        setScraping(false)
+      }
+    }, 900)
+    return () => {
+      if (scrapeTimer.current) {
+        window.clearTimeout(scrapeTimer.current)
+      }
+    }
+  }, [link, productFormMode])
 
   function filterProductList(list: ProductData[]) {
     return list.filter((p) => {
@@ -188,6 +236,9 @@ function App() {
     setProductFormMode('none')
     setSuccess('')
     setSaveError('')
+    setScraping(false)
+    setScrapeError('')
+    lastScrapedLink.current = ''
   }
 
   function openAddProduct() {
@@ -205,6 +256,9 @@ function App() {
     setImageSource('upload')
     setUploadFile(null)
     setEditingProduct(p)
+    lastScrapedLink.current = p.link?.trim() || ''
+    setScraping(false)
+    setScrapeError('')
     setProductFormMode('edit')
     setSuccess('')
     setSaveError('')
@@ -415,7 +469,9 @@ function App() {
                   <input id="p-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do produto" required />
 
                   <label htmlFor="p-link">Link do Produto</label>
-                  <input id="p-link" type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://shopee.com.br/produto" required />
+                  <input id="p-link" type="url" value={link} onChange={(e) => { setLink(e.target.value); if (!e.target.value.trim()) { setScraping(false); setScrapeError('') } }} placeholder="https://shopee.com.br/produto" required />
+                  {scraping && <p className="scrape-status"><span className="scrape-spinner" />Buscando informações...</p>}
+                  {!scraping && scrapeError && <p className="error-message scrape-error">{scrapeError}</p>}
 
                   <label htmlFor="p-store">Loja Disponível</label>
                   <input id="p-store" type="text" value={store} onChange={(e) => setStore(e.target.value)} placeholder="Shopee, Mercado Livre..." required />
@@ -615,7 +671,9 @@ function App() {
                   <input id="p-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do produto" required />
 
                   <label htmlFor="p-link">Link do Produto</label>
-                  <input id="p-link" type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://shopee.com.br/produto" required />
+                  <input id="p-link" type="url" value={link} onChange={(e) => { setLink(e.target.value); if (!e.target.value.trim()) { setScraping(false); setScrapeError('') } }} placeholder="https://shopee.com.br/produto" required />
+                  {scraping && <p className="scrape-status"><span className="scrape-spinner" />Buscando informações...</p>}
+                  {!scraping && scrapeError && <p className="error-message scrape-error">{scrapeError}</p>}
 
                   <label htmlFor="p-store">Loja Disponível</label>
                   <input id="p-store" type="text" value={store} onChange={(e) => setStore(e.target.value)} placeholder="Shopee, Mercado Livre..." required />

@@ -306,6 +306,34 @@
   text-align: center;
 }
 
+.scrape-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--marrom-claro);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.scrape-error {
+  text-align: left;
+  margin-top: 6px;
+}
+
+.scrape-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--marrom-claro);
+  border-top-color: var(--madeira);
+  border-radius: 50%;
+  animation: scrape-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes scrape-spin {
+  to { transform: rotate(360deg); }
+}
+
 .inline-form {
   display: flex;
   gap: 12px;
